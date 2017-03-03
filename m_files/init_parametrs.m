@@ -1,5 +1,4 @@
-function [A,B,C,D,L,X,Xhat,...
-          Ahat,Bhat,Chat,Dhat] =  init_parametrs()
+function [lin_systems_struct] =  init_parametrs()
 addpath(genpath('measured_data'))
 
 %% Mereni
@@ -61,6 +60,13 @@ Dhat = [0, 0;
         0, 0];
     
 Xhat = [0, 0]; % estimator initial conditions
+
+            
+lin_systems_struct = struct('A', A,'B', B, 'C', C,...
+                           'D', D,'L', L, 'X', X,...
+                           'Ahat', Ahat, 'Bhat', Bhat,...
+                           'Chat', Chat, 'Dhat', Dhat,...
+                           'Xhat', Xhat);
 
 % As the gain of the estimator (KF or LO)  increases,
 % the noise attenuation decreases but the 'speed' of

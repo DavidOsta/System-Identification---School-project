@@ -66,19 +66,144 @@
     end
     methods(Access = public)
         function self = find_friction_model(self)
+
+            % finds parameters of friction model
             num_of_samples = length(self.dataset);
             
+
+                                % get parameters of linear model
+                    lin_systems_struct = init_parametrs();
+                    % neeed to allocate arrays because of parfor cycle
+                    % =>>> Presunout do init funkce???/
+                    lin_sys_A = lin_systems_struct.A;
+                    lin_sys_B = lin_systems_struct.B;
+                    lin_sys_C = lin_systems_struct.C;
+                    lin_sys_D = lin_systems_struct.D;
+                    lin_sys_X = lin_systems_struct.X;
+            
+            
+            
+            
             for gen = 1:self.num_of_gen % generations
+                % parallel loop cannot
+                par_trial_errors = zeros(length(self.models_errors),1);
+                par_trials_iters = self.num_of_trials;
+                par_simulink_model = self.simulink_model;
+                par_dataset = self.dataset;
+                
+%                 friction_model_struct = struct(...
+%                  'sf1', self.trials_s_force_1,...
+%                 'sf2', self.trials_s_force_2,...
+%                 'cf1a', self.trials_c_force_1a,...
+%                 'cf2a', self.trials_c_force_2a,...
+%                 'cf1b', self.trials_c_force_1b,...
+%                 'cf2b', self.trials_c_force_2b,...
+%                 'vtr',self.trials_v_treshold);
+            
+                % friction parameters. Do not use struct bc of parfor
+                sf1_current_gen = self.trials_s_force_1;
+                sf2_current_gen = self.trials_s_force_2;
+                cf1a_current_gen = self.trials_c_force_1a;
+                cf2a_current_gen = self.trials_c_force_2a;
+                cf1b_current_gen = self.trials_c_force_1b;
+                cf2b_current_gen = self.trials_c_force_2b;
+                vtr_current_gen = self.trials_v_treshold;
+
+
                 %parfor
-                for trial = 1:self.num_of_trials
-                    trial_error =...
-                        self.get_trial_error(trial,num_of_samples);
+                parfor trial = 1:par_trials_iters
                     
-                    self.models_errors(trial,1) = trial_error;
+                    % setup sim model - need to do it here because of parloop
+                    load_system(par_simulink_model); % load simulink model
+                   
+                    % cannot set up it via for loop because of PARFOR !!!
+                    set_param([par_simulink_model '/friction_parameters' '/sf1'],...
+                        'Value', num2str(sf1_current_gen(trial)));
+                    set_param([par_simulink_model '/friction_parameters' '/sf2'],...
+                        'Value', num2str(sf2_current_gen(trial)));
+                    set_param([par_simulink_model '/friction_parameters' '/cf1a'],...
+                        'Value', num2str(cf1a_current_gen(trial)));
+                    set_param([par_simulink_model '/friction_parameters' '/cf2a'],...
+                        'Value', num2str(cf2a_current_gen(trial)));
+                    set_param([par_simulink_model '/friction_parameters' '/cf1b'],...
+                        'Value', num2str(cf1b_current_gen(trial)));
+                    set_param([par_simulink_model '/friction_parameters' '/cf2b'],...
+                        'Value', num2str(cf2b_current_gen(trial)));
+                    set_param([par_simulink_model '/friction_parameters' '/vtr'],...
+                        'Value', num2str(vtr_current_gen(trial)));
+                    
+                % cannot set up it via for loop because of PARFOR !!!
+                    set_param([par_simulink_model '/linear_system'],...
+                        'A', 'lin_sys_A',...
+                        'B', 'lin_sys_B',...
+                        'C', 'lin_sys_C',...
+                        'D', 'lin_sys_D',...
+                        'X0', 'lin_sys_X');
+                    
+                % It is necessary to assign it to base bc of nested func
+                    assignin('base','lin_sys_A',lin_sys_A);
+                    assignin('base','lin_sys_B',lin_sys_B);
+                    assignin('base','lin_sys_C',lin_sys_C);
+                    assignin('base','lin_sys_D',lin_sys_D);
+                    assignin('base','lin_sys_X',lin_sys_X);
+
+
+                    
+                 % THIS NEED PARALELIZATION
+                 % save errors to an array because of parallel for loop
+                 sample_errors = zeros(num_of_samples,1);
+                             for k = 1:num_of_samples
+                                 % Load of sim model
+                                 % because of parallel for loop
+                                 
+                                 dataset_struct = par_dataset{k}; % get measurement results
+                                 input_signal = dataset_struct.force_input;
+                                 
+                                 
+                                 set_param([par_simulink_model '/input_signal'],...
+                                     'VariableName', 'input_signal');
+                                 assignin('base','input_signal',input_signal);
+                                 
+                                 % self.update_base_workspace(trial, dataset_struct.force_input);
+                                 
+                                 measured_position = dataset_struct.measured_position;
+                                 
+                                 sim_time = measured_position.Time(end);
+                                 % sim_position = self.run_simulation(sim_time);
+                                 
+                                 simout = sim(par_simulink_model,'StartTime','0','StopTime',num2str(sim_time),...
+                                     'SaveOutput','on');
+                                 
+                                 sim_position = simout.get('cart_response');
+                                 
+                                 % mean square error
+                                 error = sqrt(mean((measured_position.Data - sim_position.Data).^2));
+                                 sample_errors(k) = error;
+                              end
+                    
+%                     trial_error =...
+%                         self.get_trial_error(trial,num_of_samples);
+                    par_trial_errors(trial) = sum(sample_errors);
+%                     self.models_errors(trial,1) = sample_errors;
                         
                 end
+                
+                self.models_errors = par_trial_errors;
+                
                 self.print_current_top_pop(gen);
                 self = self.update_population(gen);
+                
+% -------------------------------------------------------------------------                
+%                   for trial = 1:self.num_of_trials
+%                     trial_error =...
+%                         self.get_trial_error(trial,num_of_samples);
+%                     
+%                     self.models_errors(trial,1) = trial_error;
+%                         
+%                 end
+%                 
+%                 self.print_current_top_pop(gen);
+%                 self = self.update_population(gen);
             end
         end
         
@@ -176,17 +301,9 @@
             assignin('base','input_signal',input_signal);
             assignin('base','friction_parametrs' ,friction_parametrs);
             
-            [A,B,C,D,L,X,Xhat] = init_parametrs();
-            assignin('base','A' ,A);
-            assignin('base','B' ,B);
-            assignin('base','C' ,C);
-            assignin('base','D' ,D);
-            assignin('base','L' ,L);
-            assignin('base','X' ,X);
-            assignin('base','Xhat' ,Xhat);
-
-
-        
+            estimators_struct = init_parametrs();
+            assignin('base','estimators_struct' ,estimators_struct);
+ 
         end
         
         function error = calculate_sample_error(self,measured,simulated)
