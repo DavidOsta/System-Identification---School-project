@@ -1,0 +1,16 @@
+function plot_measured_friction( file_name )
+% PLOT_MEASURED_FRICTION Plot results from friction measurement
+% file_path - filename of measured data
+
+% add timestamp
+folder_name = get_path_of_measured_data_folder();
+
+% plot_friction_ident
+
+
+ff = FrictionMeasurement();
+ff.plot_results(file_name);
+
+
+end
+
