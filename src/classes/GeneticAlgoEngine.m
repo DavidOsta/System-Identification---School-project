@@ -16,20 +16,15 @@ classdef GeneticAlgoEngine
         'new_rnd', 0.1); 
          
         pop_distr_size;
-    
- 
+
         pop_size;
         pop_lower_bounds;
         pop_upper_bounds
         pop_init_values;
         num_of_parameters;
         rnd_distr_objects;
-
-
     end
-    
 
-    
     methods(Access = public)
         
         % Constructors
@@ -181,7 +176,7 @@ classdef GeneticAlgoEngine
             
             for k = 1:num_of_pars
                 mean = init_vals(k);
-                sig = init_vals(k); % or init_vals(k) / 2
+                sig = abs(init_vals(k)); % or init_vals(k) / 2
                 pd = makedist('normal','mu',mean,'sigma',sig);
                 pd = pd.truncate(l_bnd(k), u_bnd(k));
                 rnd_distr_objects{k} = pd;

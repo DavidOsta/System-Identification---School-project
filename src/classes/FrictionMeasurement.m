@@ -4,12 +4,11 @@ classdef FrictionMeasurement
     
     properties
         
-        sim_folder = 'sim_models';
+%         sim_folder = 'sim_models';
         
         simulink_model = 'friction_ident';
-%         save_folder = 'data/measured_data';
-        % calling static function
-        save_folder = get_path_of_measured_data_folder();
+        save_folder;
+        
         
         switch_pulses = 1;
         switch_sinuses = 2;
@@ -44,6 +43,7 @@ classdef FrictionMeasurement
         end
         
         function self = measure_response(self)
+            % BREAK IT INTO SMALLER PARTS
             
             model = self.simulink_model;
             load_system(model);
@@ -64,18 +64,23 @@ classdef FrictionMeasurement
                 'D', mat2str(D),...
                 'X0', mat2str(X));
             
+  
+            set_param([model '/observer/A'], 'Gain', mat2str(A));
+
             
             puls_simout = self.measure_puls_response();
             sinus_simout = self.measure_sin_response();
             
             self.simout = self.repair_data([puls_simout sinus_simout]);
-            
+            self.save_folder = get_path_of_data_folder('measurement');           
         end
         
         function save_data(self,name_arg)
             %Save measured results
             %   save folder - save folder destination
             %   measured_data - data to save
+            
+            % !! replace with static function, save_data !!
             
             prefix = 'friction_measurement_' ;
             if ~exist('name_arg','var')
