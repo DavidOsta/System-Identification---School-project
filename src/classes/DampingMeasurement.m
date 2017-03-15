@@ -2,7 +2,7 @@ classdef DampingMeasurement
     %UNTITLED Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties
+    properties(Access = private)
         
         simulink_model = 'damping_measurement';
         simout;
@@ -114,19 +114,13 @@ classdef DampingMeasurement
                     num2str(measured_data.Time(end)) ,' >>> ']);
                 
                 sample_time = measured_data.Time(2) - measured_data.Time(1);
-                first_sample = input_start_time / sample_time + sample_time;
-                last_sample = input_end_time / sample_time + sample_time;
+                first_sample = input_start_time / sample_time + 1;
+                last_sample = input_end_time / sample_time - 1;
                 
                 adj_data_time = measured_data.Time(first_sample:last_sample) - input_start_time ;
                 adj_data_data = measured_data.Data(first_sample:last_sample);
                 
-                
-%                        first_sample = input_start_time / sample_time ;
-%                 last_sample = input_end_time / sample_time;
-%                 
-%                 adj_data_time = measured_data.Time(first_sample:last_sample) - input_start_time + sample_time;
-%                 adj_data_data = measured_data.Data(first_sample:last_sample);
-                
+               
                 adjusted_data = timeseries(adj_data_data, adj_data_time);
                 
                 figure;
