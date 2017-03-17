@@ -6,7 +6,7 @@ classdef FrictionMeasurement
         
 %         sim_folder = 'sim_models';
         
-        simulink_model = 'friction_ident';
+        simulink_model = 'friction_measurement';
         save_folder;
         
         
@@ -48,26 +48,13 @@ classdef FrictionMeasurement
             model = self.simulink_model;
             load_system(model);
             % init observer
-            [A,B,C,D,L,X,Xhat] =  init_friction_ident_observer();
             
-            set_param([model '/observer/A'], 'Gain', mat2str(A));
-            set_param([model '/observer/B'], 'Gain', mat2str(B));
-            set_param([model '/observer/C'], 'Gain', mat2str(C));
-            set_param([model '/observer/L'], 'Gain', mat2str(L));
-            set_param([model '/observer/Xhat'], 'InitialCondition', mat2str(Xhat));
-            %         set_param([model '/observer/D'], 'Gain', mat2str(D));
-            % init lin modeal just for testing
-            set_param([model '/linear_system'],...
-                'A', mat2str(A),...
-                'B', mat2str(B),...
-                'C', mat2str(C),...
-                'D', mat2str(D),...
-                'X0', mat2str(X));
+           [ state_space_struct, observer_struct ] =...
+               get_cart_state_space_model('def_parameters.mat');
             
-  
-            set_param([model '/observer/A'], 'Gain', mat2str(A));
+           setup_statespace_block(model, 'state_space_system', state_space_struct );
+           setup_statespace_block(model, 'state_space_observer', observer_struct );
 
-            
             puls_simout = self.measure_puls_response();
             sinus_simout = self.measure_sin_response();
             

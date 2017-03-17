@@ -18,12 +18,6 @@ try
     'D', mat2str(struct_parameters.D),...
     'X0', mat2str(struct_parameters.X));
 
-num_of_outputs = length(struct_parameters.C(:,1));
-
- set_param([model_name, '/', block_name,'_selector'],...
-     'InputPortWidth', num2str(num_of_outputs), 'Indices', '[1]');
-
-
 catch ME
     switch ME.identifier
         case {'Simulink:Commands:FindSystemValidBlockDiagramOrParameter',...

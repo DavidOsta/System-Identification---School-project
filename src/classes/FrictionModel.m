@@ -73,12 +73,9 @@
             %TODO - Break it to smaller parts + optimize simulink model
             
             %parameters of linear model
-            lin_sys_A = self.lin_system_par_struct.A;
-            lin_sys_B = self.lin_system_par_struct.B;
-            lin_sys_C = self.lin_system_par_struct.C;
-            lin_sys_D = self.lin_system_par_struct.D;
-            lin_sys_X = self.lin_system_par_struct.X;
-            
+            [ state_space_struct, ~ ] =...
+                get_cart_state_space_model('def_parameters.mat');
+                       
             % Parameters for parfor cycle
             num_of_samples = length(self.dataset);
             par_size_of_pop = self.size_of_pop;
@@ -108,14 +105,10 @@
                     set_param([par_simulink_model '/friction_parameters'],...
                         'Value', mat2str(current_friction_parameters));
                            
-                    set_param([par_simulink_model '/linear_system'],...
-                        'A', mat2str(lin_sys_A),...
-                        'B', mat2str(lin_sys_B),...
-                        'C', mat2str(lin_sys_C),...
-                        'D', mat2str(lin_sys_D),...
-                        'X0', mat2str(lin_sys_X));
+                    setup_statespace_block(par_simulink_model,...
+                        'state_space_system', state_space_struct );
 
-
+                    
                  % the workers in a parallel pool cannot start or access further parallel pools
                  % thus simple loop has to be used
 
