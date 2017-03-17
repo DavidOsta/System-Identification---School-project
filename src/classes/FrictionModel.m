@@ -39,7 +39,7 @@
     end
     
     
-    methods
+    methods(Access = public)
         % Constructor
         function self = FrictionModel(varargin)
             % dataset,num_of_gen,size_of_pop,

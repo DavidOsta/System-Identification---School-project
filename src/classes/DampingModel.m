@@ -35,10 +35,6 @@ classdef DampingModel
             a1 = sys_koef(3);
             a2 = sys_koef(4);
              
-
-
-            
-            
             gain = b0;
             natural_freq = sqrt(a1);
             damping_ratio = a0 / (natural_freq * 2);
@@ -58,12 +54,12 @@ classdef DampingModel
         function self = plot_comparison(self)
             % plot compare of measured data and found model
             figure;
-            [y,t] = impulse(self.estimated_sys, self.output_signal.Time);
+            [y_sys,t_sys] =...
+                impulse(self.estimated_sys, self.output_signal.Time);
             
             plot(self.output_signal);grid on; hold on;
-            plot(t,y);
+            plot(t_sys,y_sys);
 
-            
             sys_par = self.get_parameters;
             title('Impulse response');
             xlabel('Time seconds');
@@ -78,12 +74,14 @@ classdef DampingModel
             
             
             time_axes = self.output_signal.Time;
-            [y_min, indx_min] = min(y);
-            envelope_min = y_min * exp(-sys_par.damping_ratio * sys_par.natural_freq*time_axes); %* sqrt(1/(1-sys_par.damping_ratio^2)
+            [y_min, indx_min] = min(y_sys);
+            envelope_min =...
+                y_min * exp(-sys_par.damping_ratio * sys_par.natural_freq*time_axes); %* sqrt(1/(1-sys_par.damping_ratio^2)
             
             
-            [y_max, indx_max] = max(y);
-            envelope_max = y_max * exp(-sys_par.damping_ratio * sys_par.natural_freq*time_axes);
+            [y_max, indx_max] = max(y_sys);
+            envelope_max =...
+                y_max * exp(-sys_par.damping_ratio * sys_par.natural_freq*time_axes);
             
             plot(time_axes + time_axes(indx_min), envelope_min, 'k--');
             plot(time_axes + time_axes(indx_max), envelope_max, 'k--');
@@ -112,11 +110,6 @@ classdef DampingModel
                 
             prepended_out_Data = [prepend_zeros; self.output_signal.Data];
             prepended_inp_Data = [prepend_zeros; self.input_signal.Data];
-        end
-        
-        
-        
-    end
-    
-    
+        end  
+    end  
 end
