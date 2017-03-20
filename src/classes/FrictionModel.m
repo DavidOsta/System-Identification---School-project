@@ -73,8 +73,7 @@
             %TODO - Break it to smaller parts + optimize simulink model
             
             %parameters of linear model
-            [ state_space_struct, ~ ] =...
-                get_cart_state_space_model('def_parameters.mat');
+            [ state_space_struct, ~ ] = get_cart_ss_model('def_parameters.mat');
                        
             % Parameters for parfor cycle
             num_of_samples = length(self.dataset);

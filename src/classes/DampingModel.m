@@ -93,10 +93,18 @@ classdef DampingModel
         function tf_sys = find_sys(self)
             % Find transfer function of 2nd order system for given data
             [prepended_out_Data, prepended_inp_Data] = prepend_zeros(self);
-
+            
             % input and output might have diff dimension
-            data = iddata(prepended_out_Data,...
-                prepended_inp_Data(1:length(prepended_out_Data)), self.time_sample);
+            len_out_data = length(prepended_out_Data);
+            len_in_data = length(prepended_inp_Data);
+            if(len_out_data > len_in_data)
+                prepended_out_Data = prepended_out_Data(1:len_in_data);
+            elseif(len_out_data < len_in_data)
+                prepended_inp_Data = prepended_inp_Data(1:len_out_data);   
+            end
+
+            data = iddata(prepended_out_Data, prepended_inp_Data, self.time_sample);
+
             num_of_poles = 2;
             num_of_zeros = 0;
             tf_sys = tfest(data,num_of_poles,num_of_zeros);

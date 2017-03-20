@@ -77,7 +77,7 @@ classdef DampingMeasurement
             self.simout.position = self.adjust_measured_data(measured_position);
             self.simout.angle = self.adjust_measured_data(measured_angle);
             self.simout.impulse_signal = impulse_signal;
-
+ 
             self.file_path = save_data(self.simout, 'data/measured_data',...
                 'damping_measurement');
         end

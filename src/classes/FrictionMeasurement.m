@@ -50,7 +50,7 @@ classdef FrictionMeasurement
             % init observer
             
            [ state_space_struct, observer_struct ] =...
-               get_cart_state_space_model('def_parameters.mat');
+               get_cart_ss_model('def_parameters.mat');
             
            setup_statespace_block(model, 'state_space_system', state_space_struct );
            setup_statespace_block(model, 'state_space_observer', observer_struct );
