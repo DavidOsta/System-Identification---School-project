@@ -64,11 +64,8 @@ classdef SignalShaper
         function [DZV_alpha_shaper, shaper_par] = get_DZV_alpha_Shaper(self,alpha)
             %GET_DZV_ALPHA_SHAPER returns tf of DZV_alpha shaper and its parameters
             [a, tau_add, tau_sub] = self.get_shapers_basic_parameters(alpha);
-%             [a_gain1, tau_add1, tau_sub1] = self.get_shapers_optimal_parameters(alpha)
             s = tf('s');
-%
-%             DZV_alpha_shaper =...
-%                 a + ((1-a) / (1-alpha))*( (exp(-s*alpha*tau)-exp(-s*tau)) / (s*tau) );
+
             DZV_alpha_shaper =...
                 a + ((1-a) / (1-alpha))*( (exp(-s*tau_add)-exp(-s*tau_sub)) / (s*tau_sub) );
 
@@ -87,11 +84,11 @@ classdef SignalShaper
         end
 
 
-        function [DZV_shaper, shaper_par] = get_DZV_shaper(self)
+        function [DZV_shaper, shaper_par] = get_DZV_shaper_slow(self)
             %GET_DZV_SHAPER returns ss model of DZV shaper and its parameters
             s = tf('s');
 
-            [a, tau_add, tau_sub] = self.get_DZV_shapers_parameters();
+            [a, tau_add, tau_sub] = self.get_DZV_shapers_parameters_analytical();
             
              DZV_shaper =...
                 a + ((1-a)/tau_sub)*((1-exp(-s*tau_sub)) / s);
@@ -101,23 +98,40 @@ classdef SignalShaper
             shaper_par.tau_sub = tau_sub;
             shaper_par.alpha = 0;
         end
-
+        function [DZV_inv_shaper, shaper_par] = get_inverse_DZV_shaper_slow(self)
+            %GET_INVERSE_DZV_SHAPER returns ss model of inverse DZV shaper
+            %and its parameters
+            [DZV_shaper, shaper_par] = self.get_DZV_shaper_slow();
+            DZV_inv_shaper = 1 / DZV_shaper;
+        end
+        
+        
+        
+        function [DZV_shaper, shaper_par] = get_DZV_shaper(self)
+            %GET_DZV_SHAPER returns ss model of DZV shaper and its parameters
+            s = tf('s');
+            
+            [a, tau_add, tau_sub] = self.get_DZV_shapers_parameters_analytical();
+            
+                    [a_gain, tau_add1, tau_sub1] = self.get_DZV_shapers_parameters_numerical()
+    
+            
+            
+            DZV_shaper =...
+                a + ((1-a)/tau_sub)*((1-exp(-s*tau_sub)) / s) * exp(-s*tau_add);
+            
+            shaper_par.gain_a = a;
+            shaper_par.tau_add = tau_add;
+            shaper_par.tau_sub = tau_sub;
+            shaper_par.alpha = 0;
+        end
+        
         function [DZV_inv_shaper, shaper_par] = get_inverse_DZV_shaper(self)
             %GET_INVERSE_DZV_SHAPER returns ss model of inverse DZV shaper
             %and its parameters
             [DZV_shaper, shaper_par] = self.get_DZV_shaper();
             DZV_inv_shaper = 1 / DZV_shaper;
         end
-
-%         function [DZV_inv_opt_shaper] = get_inverse_DZV_optimal_shaper(self,alpha)
-%         [a, tau_add, tau_sub] = get_shapers_optimal_parameters(self,alpha);
-% 
-%         s = tf('s');
-%         DZV_opt_shaper =...
-%             a + ((1-a) / tau_sub)*( (exp(-s*tau_add)-exp(-s*(tau_sub+tau_add))) / s );
-%         DZV_inv_opt_shaper = 1/DZV_opt_shaper;
-%         end
-
 
 
 
@@ -146,31 +160,53 @@ classdef SignalShaper
         end
         
         
-        function [a_gain, tau_add, tau_sub] = get_DZV_shapers_parameters(self)
+        function [a_gain, tau_add, tau_sub] =...
+                get_DZV_shapers_parameters_numerical(self)
             % GET_SHAPERS_BASIC_PARAMETERS calculate shapers parameter
             
             function r = find_root(tau)
                 %helper function to find root of non-lin. eq.
-                r = wo*exp(-b*tau) + b*sin(wo*tau) - wo*cos(wo*tau);
+                r = w0*exp(-b*tau) + b*sin(w0*tau) - w0*cos(w0*tau);
             end
             
             b = self.beta_re;
-            wo = self.damped_natural_freq;
+            w0 = self.damped_natural_freq;
             
-            tau0 = pi/wo; % initial guess, tau lies between <pi/wo;2pi/wo>
+            tau0 = pi/w0; % initial guess, tau lies between <pi/wo;2pi/wo>
             l_bound = tau0;
-            u_bound = 2*pi/wo;
+            u_bound = 2*pi/w0;
             tau = fzero(@find_root, tau0);
             
             if(tau > u_bound || tau < l_bound)
-                error('found root doesn'' lie in interval <pi/wo;2*pi/wo ');
+                error(['found root doesn'' lie in interval <pi/wo;2*pi/wo\n',...
+                ' numerical method has probably failed ']);
             end
             
-            a_gain = sin(wo * tau) / (sin(wo * tau) - tau * wo * exp(-b*tau));
+            a_gain = sin(w0 * tau) / (sin(w0 * tau) - tau * w0 * exp(-b*tau));
             
             tau_sub = tau;
             tau_add = 0;
+           
+         
+        end
+        
+        function [a_gain, tau_add, tau_sub] =...
+                get_DZV_shapers_parameters_analytical(self)
+            % GET_SHAPERS_BASIC_PARAMETERS calculate shapers parameter
             
+           
+            b = self.beta_re;
+            w0 = self.damped_natural_freq;
+            tau_sub = pi / w0;
+
+            
+            G = (1 - exp(-tau_sub * (b + 1j * w0))) / (tau_sub * (b + 1j * w0));
+            
+            m = abs(G);
+            phi = angle(G);
+            exp_term = m * exp((b / w0) * (pi + phi));
+            a_gain = exp_term / (1 + exp_term);
+            tau_add = (pi + phi) / w0;
         end
         
         
@@ -183,24 +219,6 @@ classdef SignalShaper
         end
         
         
-        function [a_gain, tau_add, tau_sub] = get_shapers_optimal_parameters(self,alpha)
-            
-            W = self.damped_natural_freq;
-            B = self.beta_re;
-            tau = pi / W;
-            tau_sub = alpha * tau;
-            G = (1 - exp(-(B+1j*W)*tau_sub))/(tau_sub*(B+1j*W));
-            m = abs(G);
-            phi = angle(G);
-            
-            exp_term = m * exp(-B/W * (phi + pi));
-            
-            a_gain = exp_term / (1 + exp_term);
-            tau_add = (pi + phi)/W;
-            
-        end
-
-
-    end
+   end
 
 end
