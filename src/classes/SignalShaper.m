@@ -88,6 +88,7 @@ classdef SignalShaper
             %GET_DZV_SHAPER returns ss model of DZV shaper and its parameters
             s = tf('s');
 
+%             [a, tau_add, tau_sub] = self.get_DZV_shapers_parameters_numerical();
             [a, tau_add, tau_sub] = self.get_DZV_shapers_parameters_analytical();
             
              DZV_shaper =...
@@ -112,10 +113,6 @@ classdef SignalShaper
             s = tf('s');
             
             [a, tau_add, tau_sub] = self.get_DZV_shapers_parameters_analytical();
-            
-                    [a_gain, tau_add1, tau_sub1] = self.get_DZV_shapers_parameters_numerical()
-    
-            
             
             DZV_shaper =...
                 a + ((1-a)/tau_sub)*((1-exp(-s*tau_sub)) / s) * exp(-s*tau_add);
